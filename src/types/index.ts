@@ -83,6 +83,17 @@ export interface PhishingFlag {
   reasons: string[];
 }
 
+/** A single sampled message, for the scrollable Messages list. */
+export interface MessageLite {
+  id: string;
+  threadId: string;
+  name: string;
+  email: string;
+  subject: string;
+  date: number;
+  unread: boolean;
+}
+
 export interface GroupSnapshot {
   generatedAt: number;
   sampleSize: number;
@@ -95,6 +106,8 @@ export interface GroupSnapshot {
     protectedCount: number;
   };
   senders: SenderGroup[];
+  /** Every sampled message (newest first) for the browsable Messages list. */
+  messages: MessageLite[];
   phishing: PhishingFlag[];
 }
 

@@ -291,6 +291,10 @@ table { width: 100%; border-collapse: collapse; background: var(--surface); min-
 
 .muted { color: var(--muted); }
 .shield { color: var(--protected); font-weight: 600; }
+.msg-link { color: var(--ink); text-decoration: none; display: inline-block; max-width: 460px; }
+.msg-link:hover { text-decoration: underline; }
+.msg-ext { color: var(--faint); }
+.unread-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
 .shield-btn { border: none; background: none; padding: 0; cursor: pointer; font-size: 15px; line-height: 1; }
 .shield-btn:hover { opacity: 0.6; }
 

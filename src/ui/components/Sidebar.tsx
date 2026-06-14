@@ -5,6 +5,7 @@ const NAV: { id: View; label: string; icon: string }[] = [
   { id: 'overview', label: 'Overview', icon: 'overview' },
   { id: 'triage', label: 'Triage', icon: 'triage' },
   { id: 'senders', label: 'Senders', icon: 'senders' },
+  { id: 'messages', label: 'Messages', icon: 'messages' },
   { id: 'unsubscribe', label: 'Unsubscribe', icon: 'unsubscribe' },
   { id: 'activity', label: 'Activity', icon: 'activity' },
   { id: 'settings', label: 'Settings', icon: 'settings' },

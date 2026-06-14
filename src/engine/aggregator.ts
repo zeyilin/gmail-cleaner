@@ -1,5 +1,6 @@
 import type {
   MessageMeta,
+  MessageLite,
   SenderGroup,
   GroupSnapshot,
   FacetCount,
@@ -125,6 +126,19 @@ export function buildSnapshot(messages: MessageMeta[], opts: BuildOptions): Grou
     { key: 'no', label: 'No unsubscribe header', count: messages.length - withUnsub, capped: false },
   ];
 
+  const messageList: MessageLite[] = messages
+    .filter((m) => m.from.email)
+    .map((m) => ({
+      id: m.id,
+      threadId: m.threadId,
+      name: m.from.name,
+      email: m.from.email,
+      subject: m.subject,
+      date: m.date,
+      unread: m.unread,
+    }))
+    .sort((a, b) => b.date - a.date);
+
   return {
     generatedAt: now,
     sampleSize: opts.sampleSize,
@@ -137,6 +151,7 @@ export function buildSnapshot(messages: MessageMeta[], opts: BuildOptions): Grou
       protectedCount,
     },
     senders,
+    messages: messageList,
     phishing: detectPhishing(messages),
   };
 }

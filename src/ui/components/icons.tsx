@@ -20,6 +20,12 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M4 9h11a5 5 0 0 1 0 10h-4" />
     </>
   ),
+  messages: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M3 7l9 6 9-6" />
+    </>
+  ),
   triage: (
     <>
       <rect x="3" y="6" width="13" height="14" rx="2" />

@@ -15,6 +15,7 @@ import { SendersPage, type SenderFilter } from './pages/SendersPage';
 import { UnsubscribePage } from './pages/UnsubscribePage';
 import { ActivityPage } from './pages/ActivityPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { MessagesPage } from './pages/MessagesPage';
 import { TriagePage } from './pages/TriagePage';
 import { Snackbar, type SnackbarData } from './components/Snackbar';
 import type { View, BulkKind, SenderApi, TriageKind } from './uiTypes';
@@ -23,6 +24,7 @@ const TITLES: Record<View, { eyebrow: string; title: string }> = {
   overview: { eyebrow: 'Inbox health', title: 'Overview' },
   triage: { eyebrow: 'Inbox zero', title: 'Triage' },
   senders: { eyebrow: 'Manage', title: 'Senders' },
+  messages: { eyebrow: 'Browse', title: 'Messages' },
   unsubscribe: { eyebrow: 'Stop the noise', title: 'Unsubscribe' },
   activity: { eyebrow: 'History', title: 'Activity & undo' },
   settings: { eyebrow: 'Preferences', title: 'Settings' },
@@ -490,7 +492,7 @@ export function App() {
         mode={mode}
         setMode={setMode}
         email={auth.email}
-        counts={{ triage: triageCount, senders: snapshot?.senders.length, unsubscribe: unsubCount, activity: undo.length || undefined }}
+        counts={{ triage: triageCount, senders: snapshot?.senders.length, messages: snapshot?.messages.length, unsubscribe: unsubCount, activity: undo.length || undefined }}
         onSignOut={signOut}
       />
 
@@ -570,6 +572,9 @@ export function App() {
                   />
                 ),
               )}
+
+            {view === 'messages' &&
+              needsSnapshot(snapshot && <MessagesPage snapshot={snapshot} mode={mode} />)}
 
             {view === 'unsubscribe' &&
               needsSnapshot(
