@@ -2,7 +2,7 @@
   "name": "gmail-cleaner",
   "description": "Chrome (MV3) extension to review, group, unsubscribe, and safely clean up your Gmail inbox.",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",

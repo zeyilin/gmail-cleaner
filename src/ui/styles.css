@@ -127,6 +127,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 .nav-item .ico { width: 17px; height: 17px; flex: none; opacity: 0.85; }
 .nav-item .count { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--faint); }
 .nav { display: flex; flex-direction: column; gap: 2px; }
+.ver { font-family: var(--mono); font-size: 10px; color: var(--faint); padding: 8px 10px 0; }
 .sidebar .spacer { flex: 1; }
 .mode-switch { display: flex; gap: 4px; padding: 4px; background: var(--surface-2); border-radius: 10px; margin: 6px 2px 14px; }
 .mode-switch button { flex: 1; justify-content: center; border: none; background: none; padding: 7px; font-size: 12px; color: var(--muted); border-radius: 7px; }

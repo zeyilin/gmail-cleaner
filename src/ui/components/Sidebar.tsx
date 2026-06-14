@@ -80,6 +80,7 @@ export function Sidebar({
           </button>
         </div>
       </div>
+      <div className="ver">v{chrome.runtime.getManifest().version}</div>
     </aside>
   );
 }
