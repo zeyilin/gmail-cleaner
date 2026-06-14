@@ -76,8 +76,8 @@ export function TriagePage({
       if (busy || !current) return;
       const k = e.key.toLowerCase();
       if (k === 'k') (e.preventDefault(), void run('keep'));
-      else if (k === 'a') (e.preventDefault(), void run(hasUnsub ? 'unsubArchive' : 'archive'));
-      else if (k === 't') (e.preventDefault(), void run(hasUnsub ? 'unsubTrash' : 'trash'));
+      else if (k === 'a' && hasUnsub) (e.preventDefault(), void run('unsubArchive'));
+      else if (k === 't' && hasUnsub) (e.preventDefault(), void run('unsubTrash'));
       else if (k === 'u' && hasUnsub) (e.preventDefault(), void run('unsub'));
       else if (k === 'e') (e.preventDefault(), void run('archive'));
       else if (k === 'x') (e.preventDefault(), void run('trash'));
@@ -185,34 +185,35 @@ export function TriagePage({
           <button disabled={busy} onClick={() => run('keep')}>
             Keep <kbd>K</kbd>
           </button>
-          {hasUnsub ? (
-            <>
-              <button className="primary" disabled={busy} onClick={() => run('unsubArchive')}>
-                Unsub &amp; Archive <kbd>A</kbd>
-              </button>
-              <button className="danger" disabled={busy} onClick={() => run('unsubTrash')}>
-                Unsub &amp; Trash <kbd>T</kbd>
-              </button>
-              <button disabled={busy} onClick={() => run('unsub')}>
-                Unsubscribe only <kbd>U</kbd>
-              </button>
-              <button disabled={busy} onClick={() => run('archive')}>
-                Archive only <kbd>E</kbd>
-              </button>
-              <button className="danger" disabled={busy} onClick={() => run('trash')}>
-                Trash only <kbd>X</kbd>
-              </button>
-            </>
-          ) : (
-            <>
-              <button className="primary" disabled={busy} onClick={() => run('archive')}>
-                Archive <kbd>A</kbd>
-              </button>
-              <button className="danger" disabled={busy} onClick={() => run('trash')}>
-                Trash <kbd>T</kbd>
-              </button>
-            </>
-          )}
+          <button
+            className="primary"
+            disabled={busy || !hasUnsub}
+            title={hasUnsub ? '' : 'No unsubscribe link for this sender'}
+            onClick={() => run('unsubArchive')}
+          >
+            Unsub &amp; Archive <kbd>A</kbd>
+          </button>
+          <button
+            className="danger"
+            disabled={busy || !hasUnsub}
+            title={hasUnsub ? '' : 'No unsubscribe link for this sender'}
+            onClick={() => run('unsubTrash')}
+          >
+            Unsub &amp; Trash <kbd>T</kbd>
+          </button>
+          <button
+            disabled={busy || !hasUnsub}
+            title={hasUnsub ? '' : 'No unsubscribe link for this sender'}
+            onClick={() => run('unsub')}
+          >
+            Unsubscribe only <kbd>U</kbd>
+          </button>
+          <button className={hasUnsub ? '' : 'primary'} disabled={busy} onClick={() => run('archive')}>
+            Archive{hasUnsub ? ' only' : ''} <kbd>E</kbd>
+          </button>
+          <button className="danger" disabled={busy} onClick={() => run('trash')}>
+            Trash{hasUnsub ? ' only' : ''} <kbd>X</kbd>
+          </button>
           <button className="ghost" disabled={busy} onClick={skip}>
             Skip <kbd>S</kbd>
           </button>
@@ -226,14 +227,8 @@ export function TriagePage({
       </div>
 
       <div className="triage-hint muted">
-        <kbd>K</kbd> keep · <kbd>A</kbd> {hasUnsub ? 'unsub+archive' : 'archive'} · <kbd>T</kbd>{' '}
-        {hasUnsub ? 'unsub+trash' : 'trash'}
-        {hasUnsub && (
-          <>
-            {' '}· <kbd>U</kbd> unsub · <kbd>E</kbd> archive · <kbd>X</kbd> trash
-          </>
-        )}{' '}
-        · <kbd>S</kbd>/<kbd>→</kbd> skip · <kbd>←</kbd> back
+        <kbd>K</kbd> keep · <kbd>A</kbd> unsub+archive · <kbd>T</kbd> unsub+trash · <kbd>U</kbd> unsub ·{' '}
+        <kbd>E</kbd> archive · <kbd>X</kbd> trash · <kbd>S</kbd>/<kbd>→</kbd> skip · <kbd>←</kbd> back
       </div>
     </div>
   );
