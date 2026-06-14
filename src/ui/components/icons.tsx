@@ -20,6 +20,20 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M4 9h11a5 5 0 0 1 0 10h-4" />
     </>
   ),
+  archive: (
+    <>
+      <rect x="3" y="4" width="18" height="4" rx="1" />
+      <path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8" />
+      <path d="M10 12h4" />
+    </>
+  ),
+  trash: (
+    <>
+      <path d="M4 7h16" />
+      <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+      <path d="M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13" />
+    </>
+  ),
   messages: (
     <>
       <rect x="3" y="5" width="18" height="14" rx="2" />

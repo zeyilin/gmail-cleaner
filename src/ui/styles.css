@@ -333,6 +333,11 @@ button:focus-visible, .toggle:focus-visible, .check:focus-visible, .nav-item:foc
 .triage-subjects li { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--ink-soft); padding: 7px 2px; border-bottom: 1px solid var(--hair); }
 .triage-subjects li .msg-link { flex: 1; min-width: 0; }
 .triage-subjects li .msg-date { color: var(--faint); font-size: 11px; white-space: nowrap; }
+.triage-subjects li .msg-acts { display: flex; gap: 2px; flex: none; }
+.msg-act { border: none; background: none; padding: 4px; color: var(--faint); border-radius: 6px; line-height: 0; }
+.msg-act:hover { background: var(--surface-2); color: var(--ink); }
+.msg-act.danger:hover { color: var(--danger); }
+.hidden-dot { visibility: hidden; }
 .triage-order { display: flex; align-items: center; gap: 6px; margin: 14px 0 2px; font-size: 12px; }
 .triage-order button { padding: 5px 10px; font-size: 12px; }
 .triage-order button.on { background: var(--ink); color: #fff; border-color: var(--ink); }

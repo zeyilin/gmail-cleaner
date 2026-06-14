@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { SenderGroup, MessageLite } from '../../types';
 import type { TriageKind } from '../uiTypes';
 import { normalizeSenderKey } from '../../engine/aggregator';
+import { Icon } from '../components/icons';
 
 const gmailUrl = (id: string) => `https://mail.google.com/mail/u/0/#all/${id}`;
 
@@ -36,6 +37,7 @@ export function TriagePage({
   messages,
   actionOrder,
   onAct,
+  onMessageAct,
   onRescan,
   snapshotKey,
 }: {
@@ -43,6 +45,7 @@ export function TriagePage({
   messages: MessageLite[];
   actionOrder: 'unsubFirst' | 'cleanFirst' | 'ask';
   onAct: (g: SenderGroup, kind: TriageKind, order?: 'unsubFirst' | 'cleanFirst') => Promise<void>;
+  onMessageAct: (m: MessageLite, op: 'archive' | 'trash') => Promise<void>;
   onRescan: () => void;
   snapshotKey: number;
 }) {
@@ -66,6 +69,17 @@ export function TriagePage({
     () => (current ? messages.filter((m) => normalizeSenderKey(m.email) === current.key) : []),
     [messages, current],
   );
+  const [doneMsgs, setDoneMsgs] = useState<Set<string>>(new Set());
+  useEffect(() => setDoneMsgs(new Set()), [snapshotKey]);
+  const visibleMsgs = senderMsgs.filter((m) => !doneMsgs.has(m.id));
+  const onMsg = async (m: MessageLite, op: 'archive' | 'trash') => {
+    try {
+      await onMessageAct(m, op);
+      setDoneMsgs((s) => new Set(s).add(m.id));
+    } catch {
+      /* keep the row on failure */
+    }
+  };
 
   const run = async (kind: TriageKind, ord?: 'unsubFirst' | 'cleanFirst') => {
     if (busy || !current) return;
@@ -170,11 +184,11 @@ export function TriagePage({
           {hasUnsub ? `unsub: ${current.unsubMethod}` : 'no unsubscribe'}
         </div>
 
-        {senderMsgs.length > 0 && (
+        {visibleMsgs.length > 0 && (
           <ul className="triage-subjects">
-            {senderMsgs.map((m) => (
+            {visibleMsgs.map((m) => (
               <li key={m.id}>
-                {m.unread && <span className="unread-dot" title="Unread" />}
+                <span className={`unread-dot${m.unread ? '' : ' hidden-dot'}`} title={m.unread ? 'Unread' : ''} />
                 <a
                   className="msg-link trunc"
                   href={gmailUrl(m.id)}
@@ -185,6 +199,14 @@ export function TriagePage({
                   {m.subject || '(no subject)'} <span className="msg-ext">↗</span>
                 </a>
                 <span className="msg-date mono">{fmtDate(m.date)}</span>
+                <span className="msg-acts">
+                  <button className="msg-act" title="Archive this email" aria-label="Archive this email" onClick={() => onMsg(m, 'archive')}>
+                    <Icon name="archive" size={14} />
+                  </button>
+                  <button className="msg-act danger" title="Trash this email" aria-label="Trash this email" onClick={() => onMsg(m, 'trash')}>
+                    <Icon name="trash" size={14} />
+                  </button>
+                </span>
               </li>
             ))}
           </ul>

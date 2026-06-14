@@ -25,6 +25,7 @@ export type Command =
       op?: 'archive' | 'trash';
       order?: 'unsubFirst' | 'cleanFirst';
     }
+  | { type: 'MESSAGE_ACTION'; ids: string[]; op: 'archive' | 'trash'; alsoMarkRead?: boolean; label?: string }
   | { type: 'LIST_UNDO' }
   | { type: 'UNDO'; undoId: string };
 
@@ -64,6 +65,7 @@ export interface CommandResponseMap {
   LABEL_SENDER: ActionResult;
   UNSUBSCRIBE: UnsubscribeResult;
   COMBO_CLEANUP: ComboResult;
+  MESSAGE_ACTION: ActionResult;
   LIST_UNDO: UndoBatch[];
   UNDO: { ok: boolean };
 }

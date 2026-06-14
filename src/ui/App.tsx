@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { send } from '../messaging/client';
 import type { AuthStatus, ProgressEvent } from '../messaging/commands';
-import type { SenderGroup, UndoBatch } from '../types';
+import type { SenderGroup, UndoBatch, MessageLite } from '../types';
 import { saveSettings, getSettings, DEFAULT_SETTINGS, type Settings } from '../store/settings';
 import { useGroups } from './hooks/useGroups';
 import { Sidebar } from './components/Sidebar';
@@ -441,6 +441,26 @@ export function App() {
     });
   };
 
+  // Per-message archive/trash from the triage list (one email at a time).
+  const onMessageAct = async (m: MessageLite, op: 'archive' | 'trash') => {
+    const subj = (m.subject || '(no subject)').slice(0, 44);
+    const verb = op === 'trash' ? 'Trashed' : 'Archived';
+    try {
+      const r = await send({
+        type: 'MESSAGE_ACTION',
+        ids: [m.id],
+        op,
+        alsoMarkRead: settings.markReadOnArchive,
+        label: `${verb} "${subj}"`,
+      });
+      setSnackbar({ message: `${verb} "${subj}"`, onUndo: r.undoId ? () => doUndo(r.undoId!) : undefined });
+      refreshUndo();
+    } catch (e: any) {
+      setStatus(`Action failed: ${e.message}`);
+      throw e;
+    }
+  };
+
   const api: SenderApi = { archive, trash, combo, unsub, override };
 
   // ── Render ──────────────────────────────────────────
@@ -552,6 +572,7 @@ export function App() {
                     messages={snapshot.messages ?? []}
                     actionOrder={settings.actionOrder}
                     onAct={triageAct}
+                    onMessageAct={onMessageAct}
                     onRescan={() => reload(true)}
                     snapshotKey={snapshot.generatedAt}
                   />

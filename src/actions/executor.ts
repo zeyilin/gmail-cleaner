@@ -162,6 +162,30 @@ export async function labelSender(
   return { affected: allIds.length, protectedExcluded: 0, undoId };
 }
 
+/** Archive or trash specific message ids (deliberate per-message action from the UI). */
+export async function actMessages(
+  ids: string[],
+  op: 'archive' | 'trash',
+  alsoMarkRead = false,
+  label?: string,
+): Promise<ActionResult> {
+  const clean = [...new Set(ids.filter(Boolean))];
+  if (!clean.length) return { affected: 0, protectedExcluded: 0 };
+  if (op === 'trash') await batchModify(clean, ['TRASH'], ['INBOX']);
+  else await batchModify(clean, [], alsoMarkRead ? ['INBOX', 'UNREAD'] : ['INBOX']);
+  const undoId = genId();
+  await addUndo({
+    id: undoId,
+    ts: Date.now(),
+    description: label || `${op === 'trash' ? 'Trashed' : 'Archived'} ${clean.length} message(s)`,
+    op,
+    messageIds: clean,
+    undoAddLabelIds: ['INBOX'],
+    undoRemoveLabelIds: op === 'trash' ? ['TRASH'] : [],
+  });
+  return { affected: clean.length, protectedExcluded: 0, undoId };
+}
+
 export async function applyUndo(id: string): Promise<boolean> {
   const b = await getUndo(id);
   if (!b || b.undone) return false;

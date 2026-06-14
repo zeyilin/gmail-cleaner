@@ -8,7 +8,7 @@ import { resolveProtectedLabelIds } from '../safety/protectedLabels';
 import { getCachedSnapshot, setCachedSnapshot, clearCachedSnapshot } from '../store/cache';
 import { getSettings } from '../store/settings';
 import { listUndo } from '../store/undoStore';
-import { archiveSender, trashSender, labelSender, applyUndo } from '../actions/executor';
+import { archiveSender, trashSender, labelSender, applyUndo, actMessages } from '../actions/executor';
 import { unsubscribeSender } from '../actions/unsubscribe';
 import { comboCleanup } from '../actions/comboAction';
 
@@ -113,6 +113,7 @@ const handlers: {
   LABEL_SENDER: (cmd) => labelSender(cmd.emails, cmd.email, cmd.labelName),
   UNSUBSCRIBE: (cmd) => unsubscribeSender(cmd.emails),
   COMBO_CLEANUP: (cmd) => comboCleanup(cmd),
+  MESSAGE_ACTION: (cmd) => actMessages(cmd.ids, cmd.op, cmd.alsoMarkRead, cmd.label),
   LIST_UNDO: () => listUndo(),
   UNDO: async (cmd) => ({ ok: await applyUndo(cmd.undoId) }),
 };
