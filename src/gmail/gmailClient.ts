@@ -2,6 +2,7 @@ import { ensureToken, invalidateToken } from '../auth/authService';
 import { parseFrom } from '../engine/headerParse';
 import { mapPool } from './rateLimiter';
 import { sleep, backoff } from './retry';
+import { emitLog } from '../messaging/progress';
 import type { MessageMeta } from '../types';
 
 const BASE = 'https://gmail.googleapis.com/gmail/v1/users/me';
@@ -11,6 +12,10 @@ const MAX_ATTEMPTS = 4;
 async function api(path: string, init: RequestInit = {}): Promise<any> {
   let allowAuthRetry = true;
   let attempt = 0;
+  // Debug log only the mutating calls (POST/etc.) — GETs (scan/metadata) are noisy.
+  const method = (init.method || 'GET').toUpperCase();
+  const started = Date.now();
+  const logPath = path.split('?')[0];
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const token = await ensureToken(false);
@@ -25,10 +30,14 @@ async function api(path: string, init: RequestInit = {}): Promise<any> {
         await sleep(backoff(attempt++));
         continue;
       }
+      if (method !== 'GET')
+        emitLog({ ts: started, src: 'gmail', label: `${method} ${logPath}`, ok: false, ms: Date.now() - started, detail: 'network error' });
       throw networkErr;
     }
 
     if (res.ok) {
+      if (method !== 'GET')
+        emitLog({ ts: started, src: 'gmail', label: `${method} ${logPath}`, status: res.status, ok: true, ms: Date.now() - started });
       if (res.status === 204) return null;
       const body = await res.text();
       return body ? JSON.parse(body) : null;
@@ -47,6 +56,8 @@ async function api(path: string, init: RequestInit = {}): Promise<any> {
       await sleep(Math.max(retryAfter, backoff(attempt++)));
       continue;
     }
+    if (method !== 'GET')
+      emitLog({ ts: started, src: 'gmail', label: `${method} ${logPath}`, status: res.status, ok: false, ms: Date.now() - started, detail: bodyText.slice(0, 160) });
     throw new Error(`Gmail API ${res.status} on ${path}: ${bodyText.slice(0, 300)}`);
   }
 }
@@ -103,12 +114,16 @@ export async function countExact(
 export async function listIds(
   query: string,
   max = 2000,
+  includeSpamTrash = false,
 ): Promise<{ id: string; threadId: string }[]> {
   const out: { id: string; threadId: string }[] = [];
   let pageToken: string | undefined;
   do {
     const pageSize = Math.min(500, Math.max(1, max - out.length));
     const params = new URLSearchParams({ q: query, maxResults: String(pageSize) });
+    // The Gmail API excludes SPAM/TRASH from list results unless this is set; the
+    // `in:anywhere` query operator alone does NOT bring them back.
+    if (includeSpamTrash) params.set('includeSpamTrash', 'true');
     if (pageToken) params.set('pageToken', pageToken);
     const res = await api(`/messages?${params.toString()}`);
     for (const m of res?.messages || []) out.push({ id: m.id, threadId: m.threadId });
@@ -200,19 +215,27 @@ export async function batchModify(
 export async function trashMessages(
   ids: string[],
   onProgress?: (done: number, total: number) => void,
-): Promise<void> {
-  await mapPool(
+): Promise<string[]> {
+  // Per-id failures (e.g. a message permanently deleted between listing and now,
+  // → 404) are isolated so one stale id can't abort the whole batch. Returns the
+  // ids actually trashed, so the caller records only those for undo.
+  const res = await mapPool(
     ids,
     8,
     async (id) => {
-      await api(`/messages/${id}/trash`, { method: 'POST' });
-      return null;
+      try {
+        await api(`/messages/${id}/trash`, { method: 'POST' });
+        return id;
+      } catch {
+        return null;
+      }
     },
     onProgress,
   );
+  return res.filter((x): x is string => x !== null);
 }
 
-/** Restore messages from Trash (undo of trashMessages). */
+/** Restore messages from Trash (undo of trashMessages). Per-id failures are skipped. */
 export async function untrashMessages(
   ids: string[],
   onProgress?: (done: number, total: number) => void,
@@ -221,7 +244,11 @@ export async function untrashMessages(
     ids,
     8,
     async (id) => {
-      await api(`/messages/${id}/untrash`, { method: 'POST' });
+      try {
+        await api(`/messages/${id}/untrash`, { method: 'POST' });
+      } catch {
+        /* already gone — skip so the rest of the batch still restores */
+      }
       return null;
     },
     onProgress,

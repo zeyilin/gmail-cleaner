@@ -18,6 +18,8 @@ import { SettingsPage } from './pages/SettingsPage';
 import { MessagesPage } from './pages/MessagesPage';
 import { TriagePage } from './pages/TriagePage';
 import { Snackbar, type SnackbarData } from './components/Snackbar';
+import { DebugDock } from './components/DebugDock';
+import { pushLog } from '../messaging/debugLog';
 import type { View, BulkKind, SenderApi, TriageKind } from './uiTypes';
 
 const TITLES: Record<View, { eyebrow: string; title: string }> = {
@@ -109,6 +111,10 @@ export function App() {
   useEffect(() => {
     const listener = (msg: any) => {
       if (msg && msg.__progress) setProgress(msg as ProgressEvent);
+      else if (msg && msg.__log) {
+        const { __log, ...e } = msg;
+        pushLog(e);
+      }
     };
     chrome.runtime.onMessage.addListener(listener);
     return () => chrome.runtime.onMessage.removeListener(listener);
@@ -370,11 +376,15 @@ export function App() {
         const bits: string[] = [];
         if (r.unsubscribe) bits.push(`unsub ${r.unsubscribe.ok ? 'ok' : 'manual'}`);
         if (r.archive) bits.push(`${op === 'trash' ? 'trashed' : 'archived'} ${r.archive.affected}`);
+        // The combo isolates step failures into r.errors instead of throwing — surface
+        // them so a failed clean step can't masquerade as success and auto-advance.
+        if (r.errors?.length) throw new Error(r.errors.join('; '));
         msg = `${g.displayName}: ${bits.join(' · ') || 'done'}`;
       }
       setSnackbar({ message: msg, onUndo: undoId ? () => doUndo(undoId!) : undefined });
       refreshUndo();
     } catch (e: any) {
+      setSnackbar({ message: `Action failed: ${e.message}` });
       setStatus(`Action failed: ${e.message}`);
       throw e;
     }
@@ -406,6 +416,7 @@ export function App() {
         let excluded = 0;
         let failed = 0;
         let done = 0;
+        const failures: string[] = [];
         for (let i = 0; i < groups.length; i++) {
           if (bulkAbort.current) break;
           const g = groups[i];
@@ -423,8 +434,9 @@ export function App() {
               excluded += r.protectedExcluded;
             }
             done++;
-          } catch {
+          } catch (e: any) {
             failed++;
+            failures.push(`${g.displayName}: ${e?.message ?? e}`);
           }
         }
         const aborted = bulkAbort.current;
@@ -437,6 +449,11 @@ export function App() {
             (aborted ? ' (stopped)' : '') +
             '.',
         );
+        if (failures.length)
+          setStatus(
+            `Failed — ${failures.slice(0, 5).join(' · ')}` +
+              (failures.length > 5 ? ` (+${failures.length - 5} more)` : ''),
+          );
       },
     });
   };
@@ -636,6 +653,7 @@ export function App() {
         />
       )}
       <Snackbar data={snackbar} onClose={closeSnackbar} />
+      {settings.debugMode && <DebugDock />}
     </div>
   );
 }

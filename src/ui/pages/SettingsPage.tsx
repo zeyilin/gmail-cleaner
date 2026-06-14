@@ -176,6 +176,23 @@ export function SettingsPage({
           )}
         </div>
       </section>
+
+      <section className="block" style={{ margin: 0 }}>
+        <h2>Developer</h2>
+        <div className="card" style={{ padding: '8px 18px' }}>
+          <div className="row-setting">
+            <div className="meta">
+              <div className="t">Debug mode</div>
+              <div className="d">
+                Shows a live activity log in a dock at the bottom-right — every command and Gmail
+                API call, with status code, timing, and any error. Stays on your machine; nothing is
+                sent anywhere.
+              </div>
+            </div>
+            <Toggle on={settings.debugMode} onChange={(v) => onSave({ debugMode: v })} />
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

@@ -14,6 +14,8 @@ export interface Settings {
   keepList: string[];
   /** Default order for "unsubscribe + clean" combos. */
   actionOrder: 'unsubFirst' | 'cleanFirst' | 'ask';
+  /** Show the live activity log dock (every command + Gmail API call). */
+  debugMode: boolean;
 }
 
 const KEY = 'settings';
@@ -25,6 +27,7 @@ export const DEFAULT_SETTINGS: Settings = {
   customProtectedDomains: [],
   keepList: [],
   actionOrder: 'unsubFirst',
+  debugMode: false,
 };
 
 export async function getSettings(): Promise<Settings> {

@@ -9,7 +9,7 @@ async function findUnsubMessage(emails: string[]): Promise<MessageMeta | undefin
   if (!list) return undefined;
   // Search all mail (incl. Trash/Archive) so unsubscribe still works after a
   // "clean first, then unsubscribe" triage decision.
-  const ids = await listIds(`from:(${list}) in:anywhere`, 25);
+  const ids = await listIds(`from:(${list}) in:anywhere`, 25, true);
   for (const { id } of ids) {
     const m = await getMetadata(id);
     if (m.listUnsubscribe) return m;

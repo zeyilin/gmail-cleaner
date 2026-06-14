@@ -338,6 +338,44 @@ button:focus-visible, .toggle:focus-visible, .check:focus-visible, .nav-item:foc
 .msg-act:hover { background: var(--surface-2); color: var(--ink); }
 .msg-act.danger:hover { color: var(--danger); }
 .hidden-dot { visibility: hidden; }
+
+/* ── Debug dock ─────────────────────────────────────────────────────────── */
+.debug-dock { position: fixed; right: 16px; bottom: 16px; z-index: 80; }
+.debug-pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--ink, #1a1a1a); color: #fff; border: none;
+  border-radius: 999px; padding: 7px 14px; cursor: pointer;
+  font-family: var(--mono, monospace); font-size: 11px; letter-spacing: .02em;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .2);
+}
+.debug-pill:hover { opacity: .92; }
+.debug-dot { width: 7px; height: 7px; border-radius: 50%; background: #37c06b; flex: none; }
+.debug-dot.err { background: var(--danger, #c8392b); }
+.debug-panel {
+  position: absolute; right: 0; bottom: 46px;
+  width: min(580px, 92vw); height: min(58vh, 520px);
+  background: var(--surface, #fff); color: var(--ink, #1a1a1a);
+  border: 1px solid var(--line, #e6e3dd); border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .24);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.debug-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--line, #e6e3dd); }
+.debug-head .debug-spacer { flex: 1; }
+.debug-head button { font-size: 11px; padding: 3px 10px; }
+.debug-body { overflow-y: auto; flex: 1; }
+.debug-empty { padding: 18px; color: var(--faint, #8a857c); font-size: 12px; line-height: 1.5; }
+.debug-body ul { list-style: none; margin: 0; padding: 0; }
+.debug-body li { display: flex; align-items: baseline; gap: 8px; padding: 6px 12px; border-bottom: 1px solid var(--line, #efece6); font-size: 12px; }
+.debug-body li.err { background: rgba(200, 57, 43, .06); }
+.debug-time { color: var(--faint, #8a857c); white-space: nowrap; font-size: 10px; }
+.debug-src { font-size: 9px; text-transform: uppercase; letter-spacing: .05em; padding: 1px 5px; border-radius: 4px; background: var(--surface-2, #f1efe9); color: var(--faint, #8a857c); flex: none; }
+.debug-src.gmail { background: #e8f0fe; color: #1a56b8; }
+.debug-src.command { background: #eaf6ec; color: #2a7d3a; }
+.debug-label { font-weight: 600; white-space: nowrap; }
+.debug-status { color: var(--faint, #8a857c); }
+.debug-detail { color: var(--ink, #1a1a1a); opacity: .82; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.debug-body li.err .debug-detail, .debug-body li.err .debug-status { color: var(--danger, #c8392b); opacity: 1; }
+.debug-ms { color: var(--faint, #8a857c); white-space: nowrap; margin-left: auto; font-size: 10px; }
 .triage-order { display: flex; align-items: center; gap: 6px; margin: 14px 0 2px; font-size: 12px; }
 .triage-order button { padding: 5px 10px; font-size: 12px; }
 .triage-order button.on { background: var(--ink); color: #fff; border-color: var(--ink); }

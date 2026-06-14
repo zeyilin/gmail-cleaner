@@ -85,3 +85,15 @@ export interface ProgressEvent {
   done: number;
   total: number;
 }
+
+/** Debug log event broadcast from the worker to the UI (Debug mode only consumer). */
+export interface LogEvent {
+  __log: true;
+  ts: number;
+  src: 'gmail' | 'command';
+  label: string;
+  detail?: string;
+  status?: number;
+  ok: boolean;
+  ms: number;
+}

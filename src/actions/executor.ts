@@ -102,14 +102,18 @@ async function drainInboxAction(
       total: 0,
     });
     if (op === 'trash') {
-      await trashMessages(r.keepIds, (done, total) =>
+      const trashed = await trashMessages(r.keepIds, (done, total) =>
         emitProgress({ phase: 'action', label: 'Moving to Trash…', done, total }),
       );
+      actioned.push(...trashed);
+      // Record only what actually moved; if a round trashed nothing (e.g. all ids
+      // stale), stop instead of re-listing the same ids until MAX_ROUNDS.
+      if (!trashed.length) break;
     } else {
       await batchModify(r.keepIds, [], alsoMarkRead ? ['INBOX', 'UNREAD'] : ['INBOX']);
+      actioned.push(...r.keepIds);
+      if (alsoMarkRead) actionedUnread.push(...r.keepUnreadIds);
     }
-    actioned.push(...r.keepIds);
-    if (alsoMarkRead) actionedUnread.push(...r.keepUnreadIds);
   }
 
   if (!actioned.length) return { affected: 0, protectedExcluded: protectedSeen.size };
