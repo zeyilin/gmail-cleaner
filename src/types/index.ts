@@ -22,6 +22,15 @@ export interface MessageMeta {
 }
 
 export type SenderTag = 'protected' | 'keep' | 'marketing' | 'unknown';
+/** Content-type classification (independent of the action-oriented tag). */
+export type Category =
+  | 'marketing'
+  | 'newsletter'
+  | 'social'
+  | 'updates'
+  | 'forums'
+  | 'personal'
+  | 'other';
 export type UnsubMethod = 'one-click' | 'https' | 'mailto' | 'manual' | 'none';
 export type SuggestedAction = 'keep' | 'review' | 'unsubscribe' | 'protected';
 
@@ -37,6 +46,8 @@ export interface SenderGroup {
   unreadCount: number;
   lastDate: number;
   tag: SenderTag;
+  /** Richer content category derived from Gmail's CATEGORY_* labels + heuristics. */
+  category: Category;
   suggested: SuggestedAction;
   unsubMethod: UnsubMethod;
   /** Resolved unsubscribe target (https url or mailto), if any. */

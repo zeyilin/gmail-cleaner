@@ -1,4 +1,4 @@
-import type { MessageMeta, SenderTag } from '../types';
+import type { MessageMeta, SenderTag, Category } from '../types';
 import {
   PROTECTED_DOMAINS,
   PROTECTED_SUBJECT_STRONG_RE,
@@ -91,4 +91,33 @@ export function classifySender(
     return { tag: 'marketing', reasons: [...reasons] };
   }
   return { tag: 'unknown', reasons: [...reasons] };
+}
+
+const NEWSLETTER_HOST_RE = /(substack\.com|ghost\.io|beehiiv\.com|buttondown|convertkit|mailchimp)/;
+
+/** Content-type category from Gmail's own CATEGORY_* labels + newsletter heuristics. */
+export function categorizeSender(messages: MessageMeta[]): Category {
+  const dom = domainOf(messages[0]?.from.email ?? '');
+  if (matchesDomain(dom, KEEP_NEWSLETTER_DOMAINS) || NEWSLETTER_HOST_RE.test(dom)) {
+    return 'newsletter';
+  }
+  const tally = { promotions: 0, social: 0, updates: 0, forums: 0, personal: 0 };
+  for (const m of messages) {
+    if (m.labelIds.includes('CATEGORY_PROMOTIONS')) tally.promotions++;
+    else if (m.labelIds.includes('CATEGORY_SOCIAL')) tally.social++;
+    else if (m.labelIds.includes('CATEGORY_UPDATES')) tally.updates++;
+    else if (m.labelIds.includes('CATEGORY_FORUMS')) tally.forums++;
+    else if (m.labelIds.includes('CATEGORY_PERSONAL')) tally.personal++;
+  }
+  const top = (Object.entries(tally) as [keyof typeof tally, number][]).sort(
+    (a, b) => b[1] - a[1],
+  )[0];
+  if (top && top[1] > 0) {
+    if (top[0] === 'promotions') return 'marketing';
+    if (top[0] === 'social') return 'social';
+    if (top[0] === 'updates') return 'updates';
+    if (top[0] === 'forums') return 'forums';
+    if (top[0] === 'personal') return 'personal';
+  }
+  return messages.some((m) => m.listUnsubscribe) ? 'marketing' : 'other';
 }

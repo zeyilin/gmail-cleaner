@@ -5,7 +5,7 @@ import type {
   FacetCount,
   AgeBuckets,
 } from '../types';
-import { classifySender, isProtectedMessage, type ClassifyContext } from './classifier';
+import { classifySender, isProtectedMessage, categorizeSender, type ClassifyContext } from './classifier';
 import { suggestAction } from './suggestions';
 import { resolveUnsubMethod } from './headerParse';
 import { detectPhishing } from '../safety/phishing';
@@ -106,6 +106,7 @@ export function buildSnapshot(messages: MessageMeta[], opts: BuildOptions): Grou
       unreadCount: msgs.filter((m) => m.unread).length,
       lastDate: msgs[0].date,
       tag,
+      category: categorizeSender(msgs),
       suggested: suggestAction(tag, msgs.length, hasUnsub),
       unsubMethod: method,
       unsubTarget: target,

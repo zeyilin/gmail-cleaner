@@ -1,7 +1,7 @@
 /* Pure-logic edge-case tests. Run with: npm run test:logic
  * Covers the modules that don't touch chrome.* APIs. */
 import { parseFrom, parseListUnsubscribe, resolveUnsubMethod } from '../src/engine/headerParse';
-import { isProtectedMessage, classifySender } from '../src/engine/classifier';
+import { isProtectedMessage, classifySender, categorizeSender } from '../src/engine/classifier';
 import { normalizeSenderKey, buildSnapshot } from '../src/engine/aggregator';
 import { suggestAction } from '../src/engine/suggestions';
 import { detectPhishing } from '../src/safety/phishing';
@@ -220,6 +220,14 @@ const psnap = buildSnapshot([msg({ email: 'x@vanguard.com', subject: 'Statement'
   keepKeys: new Set(['x@vanguard.com']),
 });
 eq('protected beats keep', psnap.senders[0].tag, 'protected');
+
+// ── categorizeSender ───────────────────────────────────
+eq('category promotions→marketing', categorizeSender([msg({ email: 'a@shop.test', labelIds: ['CATEGORY_PROMOTIONS'] })]), 'marketing');
+eq('category newsletter domain', categorizeSender([msg({ email: 'x@substack.com' })]), 'newsletter');
+eq('category social label', categorizeSender([msg({ email: 'n@strava.com', labelIds: ['CATEGORY_SOCIAL'] })]), 'social');
+eq('category updates label', categorizeSender([msg({ email: 'n@app.test', labelIds: ['CATEGORY_UPDATES'] })]), 'updates');
+eq('category fallback unsub→marketing', categorizeSender([msg({ email: 'a@x.test', listUnsubscribe: '<https://u>' })]), 'marketing');
+eq('category fallback→other', categorizeSender([msg({ email: 'a@x.test' })]), 'other');
 
 // ── summary ────────────────────────────────────────────
 console.log(`\n${passed} passed, ${failed} failed`);

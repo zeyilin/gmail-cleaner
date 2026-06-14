@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { SenderGroup } from '../../types';
 import type { TriageKind } from '../uiTypes';
-import { TagBadge } from '../components/Badge';
+
+type Scope = 'noise' | 'all' | 'marketing' | 'newsletter' | 'social' | 'updates';
+const SCOPES: { k: Scope; label: string }[] = [
+  { k: 'noise', label: 'Noise' },
+  { k: 'all', label: 'All' },
+  { k: 'marketing', label: 'Marketing' },
+  { k: 'newsletter', label: 'Newsletters' },
+  { k: 'social', label: 'Social' },
+  { k: 'updates', label: 'Updates' },
+];
 
 function fmtDate(ms: number): string {
   try {
@@ -9,6 +18,14 @@ function fmtDate(ms: number): string {
   } catch {
     return '';
   }
+}
+
+function inScope(g: SenderGroup, scope: Scope): boolean {
+  if (g.tag === 'protected' || g.tag === 'keep') return false;
+  if (scope === 'noise') return g.tag === 'marketing' || g.tag === 'unknown';
+  if (scope === 'all') return true;
+  if (scope === 'updates') return g.category === 'updates' || g.category === 'forums';
+  return g.category === scope;
 }
 
 export function TriagePage({
@@ -24,23 +41,20 @@ export function TriagePage({
   onRescan: () => void;
   snapshotKey: number;
 }) {
-  // Noise first: marketing + unknown, highest-volume first. Protected & kept are
-  // excluded by tag.
-  const queue = useMemo(
-    () =>
-      senders
-        .filter((g) => g.tag === 'marketing' || g.tag === 'unknown')
-        .sort((a, b) => b.count - a.count),
-    [senders],
-  );
-
+  const [scope, setScope] = useState<Scope>('noise');
   const [pos, setPos] = useState(0);
   const [busy, setBusy] = useState(false);
   const [order, setOrder] = useState<'unsubFirst' | 'cleanFirst'>('unsubFirst');
 
-  useEffect(() => setPos(0), [snapshotKey]);
+  const queue = useMemo(
+    () => senders.filter((g) => inScope(g, scope)).sort((a, b) => b.count - a.count),
+    [senders, scope],
+  );
+
+  useEffect(() => setPos(0), [snapshotKey, scope]);
 
   const current = queue[pos];
+  const hasUnsub = !!current?.hasListUnsubscribe;
 
   const run = async (kind: TriageKind, ord?: 'unsubFirst' | 'cleanFirst') => {
     if (busy || !current) return;
@@ -49,7 +63,7 @@ export function TriagePage({
       await onAct(current, kind, actionOrder === 'ask' ? (ord ?? order) : undefined);
       setPos((p) => p + 1);
     } catch {
-      /* leave the user on the card so they can retry */
+      /* leave the user on the card to retry */
     } finally {
       setBusy(false);
     }
@@ -57,67 +71,73 @@ export function TriagePage({
   const skip = () => setPos((p) => p + 1);
   const back = () => setPos((p) => Math.max(0, p - 1));
 
-  // Keyboard shortcuts (re-subscribed each render to keep closures fresh).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (busy || !current) return;
       const k = e.key.toLowerCase();
-      if (k === 'k') {
-        e.preventDefault();
-        void run('keep');
-      } else if (k === 'a') {
-        e.preventDefault();
-        void run(current.hasListUnsubscribe ? 'unsubArchive' : 'archive');
-      } else if (k === 't') {
-        e.preventDefault();
-        void run(current.hasListUnsubscribe ? 'unsubTrash' : 'trash');
-      } else if (k === 'u' && current.hasListUnsubscribe) {
-        e.preventDefault();
-        void run('unsub');
-      } else if (k === 's' || k === 'j' || e.key === 'ArrowRight') {
-        e.preventDefault();
-        skip();
-      } else if (k === 'p' || e.key === 'ArrowLeft') {
-        e.preventDefault();
-        back();
-      }
+      if (k === 'k') (e.preventDefault(), void run('keep'));
+      else if (k === 'a') (e.preventDefault(), void run(hasUnsub ? 'unsubArchive' : 'archive'));
+      else if (k === 't') (e.preventDefault(), void run(hasUnsub ? 'unsubTrash' : 'trash'));
+      else if (k === 'u' && hasUnsub) (e.preventDefault(), void run('unsub'));
+      else if (k === 'e') (e.preventDefault(), void run('archive'));
+      else if (k === 'x') (e.preventDefault(), void run('trash'));
+      else if (k === 's' || k === 'j' || e.key === 'ArrowRight') (e.preventDefault(), skip());
+      else if (k === 'p' || e.key === 'ArrowLeft') (e.preventDefault(), back());
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   });
 
+  const scopeBar = (
+    <div className="controls" style={{ justifyContent: 'center' }}>
+      <div className="segmented" role="group" aria-label="Triage scope">
+        {SCOPES.map((s) => (
+          <button key={s.k} className={scope === s.k ? 'on' : ''} aria-pressed={scope === s.k} onClick={() => setScope(s.k)}>
+            {s.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
   if (!queue.length) {
     return (
-      <div className="empty">
-        <div className="big">Nothing to triage</div>
-        No marketing or unknown senders in this scan — your inbox noise is handled.
-        <div style={{ marginTop: 14 }}>
-          <button className="primary" onClick={onRescan}>
-            Rescan inbox
-          </button>
+      <>
+        {scopeBar}
+        <div className="empty">
+          <div className="big">Nothing here</div>
+          No senders in “{SCOPES.find((s) => s.k === scope)?.label}”. Try another scope or rescan.
+          <div style={{ marginTop: 14 }}>
+            <button className="primary" onClick={onRescan}>
+              Rescan inbox
+            </button>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   if (!current) {
     return (
-      <div className="empty">
-        <div className="big">All caught up ✦</div>
-        You went through all {queue.length} noisy senders. Rescan to pull in anything new.
-        <div style={{ marginTop: 14 }}>
-          <button className="primary" onClick={onRescan}>
-            Rescan inbox
-          </button>
+      <>
+        {scopeBar}
+        <div className="empty">
+          <div className="big">All caught up ✦</div>
+          You went through all {queue.length} senders in this scope.
+          <div style={{ marginTop: 14 }}>
+            <button onClick={() => setPos(0)}>Review again</button>{' '}
+            <button className="primary" onClick={onRescan}>
+              Rescan inbox
+            </button>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
-  const hasUnsub = current.hasListUnsubscribe;
-
   return (
     <div className="triage-wrap">
+      {scopeBar}
       <div className="triage-progress mono">
         {pos + 1} of {queue.length}
       </div>
@@ -128,7 +148,10 @@ export function TriagePage({
             <div className="triage-name">{current.displayName}</div>
             <div className="mono triage-mail trunc">{current.key}</div>
           </div>
-          <TagBadge tag={current.tag} />
+          <span className="tag">
+            <span className={`dot ${current.category}`} />
+            {current.category}
+          </span>
         </div>
 
         <div className="triage-meta mono">
@@ -140,7 +163,7 @@ export function TriagePage({
           <ul className="triage-subjects">
             {current.recentSubjects.map((s, i) => (
               <li key={i} className="trunc">
-                {s}
+                {s || '(no subject)'}
               </li>
             ))}
           </ul>
@@ -170,6 +193,15 @@ export function TriagePage({
               <button className="danger" disabled={busy} onClick={() => run('unsubTrash')}>
                 Unsub &amp; Trash <kbd>T</kbd>
               </button>
+              <button disabled={busy} onClick={() => run('unsub')}>
+                Unsubscribe only <kbd>U</kbd>
+              </button>
+              <button disabled={busy} onClick={() => run('archive')}>
+                Archive only <kbd>E</kbd>
+              </button>
+              <button className="danger" disabled={busy} onClick={() => run('trash')}>
+                Trash only <kbd>X</kbd>
+              </button>
             </>
           ) : (
             <>
@@ -187,19 +219,6 @@ export function TriagePage({
         </div>
 
         <div className="triage-secondary">
-          {hasUnsub && (
-            <>
-              <button className="link-btn" disabled={busy} onClick={() => run('unsub')}>
-                Unsubscribe only
-              </button>
-              <button className="link-btn" disabled={busy} onClick={() => run('archive')}>
-                Archive only
-              </button>
-              <button className="link-btn" disabled={busy} onClick={() => run('trash')}>
-                Trash only
-              </button>
-            </>
-          )}
           <button className="link-btn" disabled={busy || pos === 0} onClick={back}>
             ← Back
           </button>
@@ -207,13 +226,14 @@ export function TriagePage({
       </div>
 
       <div className="triage-hint muted">
-        <kbd>K</kbd> keep · <kbd>A</kbd> unsub+archive · <kbd>T</kbd> unsub+trash ·{' '}
+        <kbd>K</kbd> keep · <kbd>A</kbd> {hasUnsub ? 'unsub+archive' : 'archive'} · <kbd>T</kbd>{' '}
+        {hasUnsub ? 'unsub+trash' : 'trash'}
         {hasUnsub && (
           <>
-            <kbd>U</kbd> unsub ·{' '}
+            {' '}· <kbd>U</kbd> unsub · <kbd>E</kbd> archive · <kbd>X</kbd> trash
           </>
-        )}
-        <kbd>S</kbd>/<kbd>→</kbd> skip · <kbd>←</kbd> back
+        )}{' '}
+        · <kbd>S</kbd>/<kbd>→</kbd> skip · <kbd>←</kbd> back
       </div>
     </div>
   );

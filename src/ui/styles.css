@@ -91,6 +91,12 @@ button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 .dot.marketing { background: var(--marketing); }
 .dot.protected { background: var(--protected); }
 .dot.unknown { background: var(--unknown); }
+.dot.newsletter { background: var(--keep); }
+.dot.social { background: var(--protected); }
+.dot.updates { background: #2b6cb0; }
+.dot.forums { background: #8a8d93; }
+.dot.personal { background: #8a8d93; }
+.dot.other { background: var(--unknown); }
 .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--hair); }
 .pill.method { color: var(--ink-soft); }
 .pill.protected { background: var(--protected-bg); color: var(--protected); border-color: transparent; }
