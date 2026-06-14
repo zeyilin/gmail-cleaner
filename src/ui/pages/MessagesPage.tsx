@@ -23,6 +23,8 @@ export function MessagesPage({ snapshot, mode }: { snapshot: GroupSnapshot; mode
   const [q, setQ] = useState('');
   const [limit, setLimit] = useState(PAGE);
   const advanced = mode === 'advanced';
+  // Older cached snapshots predate the messages field — guard against undefined.
+  const all = snapshot.messages ?? [];
 
   const catByKey = useMemo(() => {
     const m = new Map<string, Category>();
@@ -32,20 +34,20 @@ export function MessagesPage({ snapshot, mode }: { snapshot: GroupSnapshot; mode
 
   const filtered = useMemo(() => {
     const ql = q.trim().toLowerCase();
-    if (!ql) return snapshot.messages;
-    return snapshot.messages.filter(
+    if (!ql) return all;
+    return all.filter(
       (m) =>
         m.subject.toLowerCase().includes(ql) ||
         m.name.toLowerCase().includes(ql) ||
         m.email.toLowerCase().includes(ql),
     );
-  }, [snapshot.messages, q]);
+  }, [all, q]);
 
-  if (!snapshot.messages.length) {
+  if (!all.length) {
     return (
       <div className="empty">
-        <div className="big">No messages</div>
-        Run a scan to load your inbox sample.
+        <div className="big">No messages yet</div>
+        Click <b>Rescan</b> (top-right) to load your inbox sample.
       </div>
     );
   }

@@ -492,7 +492,7 @@ export function App() {
         mode={mode}
         setMode={setMode}
         email={auth.email}
-        counts={{ triage: triageCount, senders: snapshot?.senders.length, messages: snapshot?.messages.length, unsubscribe: unsubCount, activity: undo.length || undefined }}
+        counts={{ triage: triageCount, senders: snapshot?.senders.length, messages: snapshot?.messages?.length, unsubscribe: unsubCount, activity: undo.length || undefined }}
         onSignOut={signOut}
       />
 
