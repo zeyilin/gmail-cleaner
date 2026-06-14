@@ -456,6 +456,7 @@ export function App() {
       setSnackbar({ message: `${verb} "${subj}"`, onUndo: r.undoId ? () => doUndo(r.undoId!) : undefined });
       refreshUndo();
     } catch (e: any) {
+      setSnackbar({ message: `Couldn't ${op} "${subj}" — ${e.message}` });
       setStatus(`Action failed: ${e.message}`);
       throw e;
     }

@@ -1,4 +1,12 @@
-import { listIds, getMetadataMany, batchModify, ensureLabel, listLabels } from '../gmail/gmailClient';
+import {
+  listIds,
+  getMetadataMany,
+  batchModify,
+  trashMessages,
+  untrashMessages,
+  ensureLabel,
+  listLabels,
+} from '../gmail/gmailClient';
 import { isProtectedMessage } from '../engine/classifier';
 import { resolveProtectedLabelIds } from '../safety/protectedLabels';
 import { getSettings } from '../store/settings';
@@ -94,7 +102,9 @@ async function drainInboxAction(
       total: 0,
     });
     if (op === 'trash') {
-      await batchModify(r.keepIds, ['TRASH'], ['INBOX']);
+      await trashMessages(r.keepIds, (done, total) =>
+        emitProgress({ phase: 'action', label: 'Moving to Trash…', done, total }),
+      );
     } else {
       await batchModify(r.keepIds, [], alsoMarkRead ? ['INBOX', 'UNREAD'] : ['INBOX']);
     }
@@ -171,7 +181,7 @@ export async function actMessages(
 ): Promise<ActionResult> {
   const clean = [...new Set(ids.filter(Boolean))];
   if (!clean.length) return { affected: 0, protectedExcluded: 0 };
-  if (op === 'trash') await batchModify(clean, ['TRASH'], ['INBOX']);
+  if (op === 'trash') await trashMessages(clean);
   else await batchModify(clean, [], alsoMarkRead ? ['INBOX', 'UNREAD'] : ['INBOX']);
   const undoId = genId();
   await addUndo({
@@ -189,6 +199,16 @@ export async function actMessages(
 export async function applyUndo(id: string): Promise<boolean> {
   const b = await getUndo(id);
   if (!b || b.undone) return false;
+
+  // Trash is done via the dedicated endpoint, so undo via untrash (which restores
+  // the message's prior labels), then make sure it's back in the inbox.
+  if (b.op === 'trash') {
+    await untrashMessages(b.messageIds);
+    await batchModify(b.messageIds, ['INBOX'], []);
+    if (b.restoreUnreadIds?.length) await batchModify(b.restoreUnreadIds, ['UNREAD'], []);
+    await markUndone(id);
+    return true;
+  }
 
   let add = b.undoAddLabelIds;
   let remove = b.undoRemoveLabelIds;

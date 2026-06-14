@@ -191,6 +191,43 @@ export async function batchModify(
   }
 }
 
+/**
+ * Move messages to Trash. The Gmail API does NOT allow adding the TRASH label via
+ * messages.modify / batchModify (it 400s "Invalid label: TRASH"); the dedicated
+ * trash endpoint is the only correct way, and it's covered by the gmail.modify
+ * scope. There is no batch form, so we fan out per-id through the rate-limited pool.
+ */
+export async function trashMessages(
+  ids: string[],
+  onProgress?: (done: number, total: number) => void,
+): Promise<void> {
+  await mapPool(
+    ids,
+    8,
+    async (id) => {
+      await api(`/messages/${id}/trash`, { method: 'POST' });
+      return null;
+    },
+    onProgress,
+  );
+}
+
+/** Restore messages from Trash (undo of trashMessages). */
+export async function untrashMessages(
+  ids: string[],
+  onProgress?: (done: number, total: number) => void,
+): Promise<void> {
+  await mapPool(
+    ids,
+    8,
+    async (id) => {
+      await api(`/messages/${id}/untrash`, { method: 'POST' });
+      return null;
+    },
+    onProgress,
+  );
+}
+
 // ── Labels ────────────────────────────────────────────────────────────────---
 
 export async function listLabels(): Promise<{ id: string; name: string }[]> {
