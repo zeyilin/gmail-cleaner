@@ -44,9 +44,13 @@ If you've been **added as a tester** (or it's your own machine), you don't need 
    - User type: **External**, publishing status: **Testing**.
    - Add your Google account (e.g. `zeyi.lin@gmail.com`) under **Test users**. (≤100 test users ⇒ no verification, no security assessment.)
 4. **APIs & Services → Credentials → Create credentials → OAuth client ID**:
-   - Application type: **Chrome Extension**.
-   - **Application ID**: paste the extension's fixed ID — `ofihbpicokjpgdmgihkldfbgapnojklg`. (It's pinned by the `key` in `wxt.config.ts`, so it's identical on every machine — no need to load the extension first.)
+   - Application type: **Web application**.
+   - Under **Authorized redirect URIs** → **Add URI**, paste exactly:
+     `https://ofihbpicokjpgdmgihkldfbgapnojklg.chromiumapp.org/`
+     (the extension's fixed redirect — derived from the pinned extension ID, identical on every machine.)
 5. Copy the generated **client ID** (`...apps.googleusercontent.com`).
+
+> Sign-in uses `chrome.identity.launchWebAuthFlow`, so it works in **Chrome, Arc, Brave, and Edge** — not just Google Chrome.
 
 ### 2. Configure the extension
 ```bash

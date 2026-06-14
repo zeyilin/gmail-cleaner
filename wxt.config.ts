@@ -49,7 +49,7 @@ export default defineConfig({
       scopes: SCOPES,
     },
     // Pins a stable extension ID (ofihbpicokjpgdmgihkldfbgapnojklg) so the OAuth
-    // client's Item ID always matches. Generated from key.pem (gitignored).
+    // redirect URI (https://<id>.chromiumapp.org/) is constant. From key.pem (gitignored).
     key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqvfhh+AKyOPFbpg1gvOOMTKEZ1aelnSrghcvif3BHlDKbV1HPC3XRNmpFnFpo2poB5v6FxXU6M9Da7vEvrDApSrcQO6nlJ+XWxVXdwgviuqOxs3TMPF6bKIosq7YII+tDyht3hJccB2bjXabVvmR83i3PynAWKowl4tAxXlHyZMI2cXVa3voTK1qpfJBGXhFOdYp4MM8WSmdCMikGbptjrvUa1X3smRhumlGRajHgcIfQcuWSLyHfq9wua7XBQCVmV0a9Y3EkMscY6LXNMSt+OGmssAWG4sDLX29S+RJ3ZcNeO+WOvYyUTxPRoKmkWUFWd7KBbPjgxizEldoEGnh/QIDAQAB',
   },
 });
