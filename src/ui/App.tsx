@@ -549,6 +549,7 @@ export function App() {
                 snapshot && (
                   <TriagePage
                     senders={snapshot.senders}
+                    messages={snapshot.messages ?? []}
                     actionOrder={settings.actionOrder}
                     onAct={triageAct}
                     onRescan={() => reload(true)}

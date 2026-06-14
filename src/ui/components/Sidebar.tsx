@@ -35,7 +35,7 @@ export function Sidebar({
           Gmail&nbsp;<em>Cleaner</em>
         </span>
       </div>
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <nav className="nav">
         {NAV.map((n) => (
           <button
             key={n.id}

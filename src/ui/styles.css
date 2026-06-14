@@ -126,6 +126,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 .nav-item.active { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
 .nav-item .ico { width: 17px; height: 17px; flex: none; opacity: 0.85; }
 .nav-item .count { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--faint); }
+.nav { display: flex; flex-direction: column; gap: 2px; }
 .sidebar .spacer { flex: 1; }
 .mode-switch { display: flex; gap: 4px; padding: 4px; background: var(--surface-2); border-radius: 10px; margin: 6px 2px 14px; }
 .mode-switch button { flex: 1; justify-content: center; border: none; background: none; padding: 7px; font-size: 12px; color: var(--muted); border-radius: 7px; }
@@ -327,12 +328,16 @@ button:focus-visible, .toggle:focus-visible, .check:focus-visible, .nav-item:foc
 .triage-name { font-family: var(--display); font-weight: 500; font-size: 20px; letter-spacing: -0.01em; }
 .triage-mail { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .triage-meta { font-size: 12px; color: var(--muted); margin: 12px 0; }
-.triage-subjects { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hair); }
-.triage-subjects li { font-size: 13px; color: var(--ink-soft); padding: 7px 0; border-bottom: 1px solid var(--hair); }
+.triage-subjects { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hair); max-height: 230px; overflow-y: auto; }
+.triage-subjects li { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--ink-soft); padding: 7px 2px; border-bottom: 1px solid var(--hair); }
+.triage-subjects li .msg-link { flex: 1; min-width: 0; }
+.triage-subjects li .msg-date { color: var(--faint); font-size: 11px; white-space: nowrap; }
 .triage-order { display: flex; align-items: center; gap: 6px; margin: 14px 0 2px; font-size: 12px; }
 .triage-order button { padding: 5px 10px; font-size: 12px; }
 .triage-order button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
-.triage-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.triage-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 18px; }
+.triage-actions button { width: 100%; justify-content: space-between; }
+.triage-actions .span2 { grid-column: 1 / -1; justify-content: center; }
 .triage-secondary { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--hair); }
 .triage-hint { text-align: center; font-size: 12px; margin-top: 16px; }
 kbd { font-family: var(--mono); font-size: 10px; background: var(--surface-2); border: 1px solid var(--hair-2); border-bottom-width: 2px; border-radius: 5px; padding: 1px 5px; color: var(--muted); }
@@ -346,3 +351,37 @@ kbd { font-family: var(--mono); font-size: 10px; background: var(--surface-2); b
 .snackbar-undo:hover { background: rgba(255, 255, 255, 0.14); }
 .snackbar-x { background: transparent; border: none; color: rgba(255, 255, 255, 0.6); padding: 4px 6px; }
 .snackbar-x:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
+
+/* ── Responsive (small screens) ───────────────────────── */
+@media (max-width: 860px) {
+  .shell { grid-template-columns: 1fr; }
+  .sidebar {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    border-right: none;
+    border-bottom: 1px solid var(--hair);
+    padding: 12px 16px;
+  }
+  .brand { padding: 0; margin-right: 4px; }
+  .brand .mark { font-size: 18px; }
+  .nav { flex-direction: row; flex-wrap: wrap; flex: 1; gap: 4px; }
+  .nav-item { padding: 7px 10px; }
+  .nav-item .count { display: none; }
+  .sidebar .spacer { display: none; }
+  .mode-switch { margin: 0; }
+  .account { border-top: none; padding: 0; }
+  .account .who .e { display: none; }
+  .bulkbar { left: 0; }
+  .main-inner { padding: 22px 16px 96px; }
+  .topbar { flex-wrap: wrap; }
+}
+@media (max-width: 480px) {
+  .triage-actions { grid-template-columns: 1fr; }
+  .hero { gap: 18px; }
+  .hero .big { font-size: 44px; }
+  .hero .divider { display: none; }
+}

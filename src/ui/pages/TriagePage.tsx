@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { SenderGroup } from '../../types';
+import type { SenderGroup, MessageLite } from '../../types';
 import type { TriageKind } from '../uiTypes';
+import { normalizeSenderKey } from '../../engine/aggregator';
+
+const gmailUrl = (id: string) => `https://mail.google.com/mail/u/0/#all/${id}`;
 
 type Scope = 'noise' | 'all' | 'marketing' | 'newsletter' | 'social' | 'updates';
 const SCOPES: { k: Scope; label: string }[] = [
@@ -30,12 +33,14 @@ function inScope(g: SenderGroup, scope: Scope): boolean {
 
 export function TriagePage({
   senders,
+  messages,
   actionOrder,
   onAct,
   onRescan,
   snapshotKey,
 }: {
   senders: SenderGroup[];
+  messages: MessageLite[];
   actionOrder: 'unsubFirst' | 'cleanFirst' | 'ask';
   onAct: (g: SenderGroup, kind: TriageKind, order?: 'unsubFirst' | 'cleanFirst') => Promise<void>;
   onRescan: () => void;
@@ -55,6 +60,12 @@ export function TriagePage({
 
   const current = queue[pos];
   const hasUnsub = !!current?.hasListUnsubscribe;
+
+  // All of this sender's sampled emails (newest first), for the scrollable list.
+  const senderMsgs = useMemo(
+    () => (current ? messages.filter((m) => normalizeSenderKey(m.email) === current.key) : []),
+    [messages, current],
+  );
 
   const run = async (kind: TriageKind, ord?: 'unsubFirst' | 'cleanFirst') => {
     if (busy || !current) return;
@@ -159,11 +170,21 @@ export function TriagePage({
           {hasUnsub ? `unsub: ${current.unsubMethod}` : 'no unsubscribe'}
         </div>
 
-        {current.recentSubjects.length > 0 && (
+        {senderMsgs.length > 0 && (
           <ul className="triage-subjects">
-            {current.recentSubjects.map((s, i) => (
-              <li key={i} className="trunc">
-                {s || '(no subject)'}
+            {senderMsgs.map((m) => (
+              <li key={m.id}>
+                {m.unread && <span className="unread-dot" title="Unread" />}
+                <a
+                  className="msg-link trunc"
+                  href={gmailUrl(m.id)}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={`${m.subject || '(no subject)'} — open in Gmail`}
+                >
+                  {m.subject || '(no subject)'} <span className="msg-ext">↗</span>
+                </a>
+                <span className="msg-date mono">{fmtDate(m.date)}</span>
               </li>
             ))}
           </ul>
@@ -182,16 +203,13 @@ export function TriagePage({
         )}
 
         <div className="triage-actions">
-          <button disabled={busy} onClick={() => run('keep')}>
-            Keep <kbd>K</kbd>
-          </button>
           <button
             className="primary"
             disabled={busy || !hasUnsub}
             title={hasUnsub ? '' : 'No unsubscribe link for this sender'}
             onClick={() => run('unsubArchive')}
           >
-            Unsub &amp; Archive <kbd>A</kbd>
+            <span>Unsub &amp; Archive</span> <kbd>A</kbd>
           </button>
           <button
             className="danger"
@@ -199,23 +217,26 @@ export function TriagePage({
             title={hasUnsub ? '' : 'No unsubscribe link for this sender'}
             onClick={() => run('unsubTrash')}
           >
-            Unsub &amp; Trash <kbd>T</kbd>
+            <span>Unsub &amp; Trash</span> <kbd>T</kbd>
+          </button>
+          <button className={hasUnsub ? '' : 'primary'} disabled={busy} onClick={() => run('archive')}>
+            <span>Archive{hasUnsub ? ' only' : ''}</span> <kbd>E</kbd>
+          </button>
+          <button className="danger" disabled={busy} onClick={() => run('trash')}>
+            <span>Trash{hasUnsub ? ' only' : ''}</span> <kbd>X</kbd>
           </button>
           <button
             disabled={busy || !hasUnsub}
             title={hasUnsub ? '' : 'No unsubscribe link for this sender'}
             onClick={() => run('unsub')}
           >
-            Unsubscribe only <kbd>U</kbd>
+            <span>Unsubscribe only</span> <kbd>U</kbd>
           </button>
-          <button className={hasUnsub ? '' : 'primary'} disabled={busy} onClick={() => run('archive')}>
-            Archive{hasUnsub ? ' only' : ''} <kbd>E</kbd>
+          <button disabled={busy} onClick={() => run('keep')}>
+            <span>Keep</span> <kbd>K</kbd>
           </button>
-          <button className="danger" disabled={busy} onClick={() => run('trash')}>
-            Trash{hasUnsub ? ' only' : ''} <kbd>X</kbd>
-          </button>
-          <button className="ghost" disabled={busy} onClick={skip}>
-            Skip <kbd>S</kbd>
+          <button className="ghost span2" disabled={busy} onClick={skip}>
+            <span>Skip</span> <kbd>S</kbd>
           </button>
         </div>
 
