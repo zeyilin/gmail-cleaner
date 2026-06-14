@@ -198,6 +198,29 @@ check('phishing flags brand mismatch', phish.some((p) => p.from === 'payments-up
 check('phishing flags urgent language', phish.some((p) => p.from === 'random@x.com'));
 check('phishing does not flag legit amazon order', !phish.some((p) => p.from === 'auto-confirm@amazon.com'));
 
+// ── triage: recentSubjects + keep-list tagging ─────────
+const tmsgs: MessageMeta[] = [
+  msg({ email: 'a@shop.test', subject: 'Sale 1', labelIds: ['CATEGORY_PROMOTIONS'], listUnsubscribe: '<https://u>', date: NOW - 1 * DAY }),
+  msg({ email: 'a@shop.test', subject: 'Sale 2', labelIds: ['CATEGORY_PROMOTIONS'], listUnsubscribe: '<https://u>', date: NOW - 2 * DAY }),
+];
+const baseOpts = {
+  sampleSize: 10,
+  protectedLabelIds: new Set<string>(),
+  extraProtectedDomains: [] as string[],
+  categoryFacets: [],
+  readUnreadFacets: [],
+};
+const tsnap = buildSnapshot(tmsgs, baseOpts);
+eq('recentSubjects newest-first', tsnap.senders[0].recentSubjects, ['Sale 1', 'Sale 2']);
+eq('shop tagged marketing', tsnap.senders[0].tag, 'marketing');
+const ksnap = buildSnapshot(tmsgs, { ...baseOpts, keepKeys: new Set(['a@shop.test']) });
+eq('keepKeys forces tag=keep', ksnap.senders[0].tag, 'keep');
+const psnap = buildSnapshot([msg({ email: 'x@vanguard.com', subject: 'Statement' })], {
+  ...baseOpts,
+  keepKeys: new Set(['x@vanguard.com']),
+});
+eq('protected beats keep', psnap.senders[0].tag, 'protected');
+
 // ── summary ────────────────────────────────────────────
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

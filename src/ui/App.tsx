@@ -15,10 +15,13 @@ import { SendersPage, type SenderFilter } from './pages/SendersPage';
 import { UnsubscribePage } from './pages/UnsubscribePage';
 import { ActivityPage } from './pages/ActivityPage';
 import { SettingsPage } from './pages/SettingsPage';
-import type { View, BulkKind, SenderApi } from './uiTypes';
+import { TriagePage } from './pages/TriagePage';
+import { Snackbar, type SnackbarData } from './components/Snackbar';
+import type { View, BulkKind, SenderApi, TriageKind } from './uiTypes';
 
 const TITLES: Record<View, { eyebrow: string; title: string }> = {
   overview: { eyebrow: 'Inbox health', title: 'Overview' },
+  triage: { eyebrow: 'Inbox zero', title: 'Triage' },
   senders: { eyebrow: 'Manage', title: 'Senders' },
   unsubscribe: { eyebrow: 'Stop the noise', title: 'Unsubscribe' },
   activity: { eyebrow: 'History', title: 'Activity & undo' },
@@ -85,6 +88,7 @@ export function App() {
   const [connecting, setConnecting] = useState(false);
   const [bulk, setBulk] = useState<{ label: string } | null>(null);
   const [pendingUnsub, setPendingUnsub] = useState<Set<string>>(new Set());
+  const [snackbar, setSnackbar] = useState<SnackbarData | null>(null);
   const bulkAbort = useRef(false);
 
   useEffect(() => {
@@ -114,13 +118,15 @@ export function App() {
   const refreshUndo = useCallback(() => {
     send({ type: 'LIST_UNDO' }).then(setUndo).catch(() => {});
   }, []);
+  const closeSnackbar = useCallback(() => setSnackbar(null), []);
   useEffect(() => {
     if (auth?.signedIn) refreshUndo();
   }, [auth?.signedIn, refreshUndo]);
 
-  const afterAction = (msg: string) => {
+  const afterAction = (msg: string, undoId?: string) => {
     setProgress(null);
-    setStatus(msg);
+    setStatus('');
+    setSnackbar({ message: msg, onUndo: undoId ? () => doUndo(undoId) : undefined });
     refreshUndo();
     void reload(true);
   };
@@ -204,7 +210,7 @@ export function App() {
       onConfirm: async (sel) => {
         const r = await send({ type: 'ARCHIVE_SENDER', email: g.key, emails: g.emails, alsoMarkRead: !!sel.markRead });
         setConfirm(null);
-        afterAction(`Archived ${r.affected} from ${g.displayName}${r.protectedExcluded ? ` — ${r.protectedExcluded} protected excluded.` : '.'}`);
+        afterAction(`Archived ${r.affected} from ${g.displayName}${r.protectedExcluded ? ` — ${r.protectedExcluded} protected excluded.` : '.'}`, r.undoId);
       },
     });
 
@@ -222,7 +228,7 @@ export function App() {
       onConfirm: async () => {
         const r = await send({ type: 'TRASH_SENDER', email: g.key, emails: g.emails });
         setConfirm(null);
-        afterAction(`Trashed ${r.affected} from ${g.displayName}${r.protectedExcluded ? ` — ${r.protectedExcluded} protected excluded.` : '.'}`);
+        afterAction(`Trashed ${r.affected} from ${g.displayName}${r.protectedExcluded ? ` — ${r.protectedExcluded} protected excluded.` : '.'}`, r.undoId);
       },
     });
 
@@ -258,7 +264,7 @@ export function App() {
         if (r.archive) parts.push(`archived ${r.archive.affected}${r.archive.protectedExcluded ? `, ${r.archive.protectedExcluded} protected kept` : ''}`);
         if (r.filter) parts.push(`filter ${r.filter.ok ? 'created' : 'skipped'}`);
         if (r.errors?.length) parts.push(...r.errors);
-        afterAction(`${g.displayName} — ${parts.join('; ') || 'nothing selected'}.`);
+        afterAction(`${g.displayName} — ${parts.join('; ') || 'nothing selected'}.`, r.archive?.undoId);
       },
     });
 
@@ -310,10 +316,10 @@ export function App() {
         setConfirm(null);
         if (sel.doTrash) {
           const r = await send({ type: 'TRASH_SENDER', email: g.key, emails: g.emails, allowProtected: true });
-          afterAction(`Override — trashed ${r.affected} from ${g.displayName}.`);
+          afterAction(`Override — trashed ${r.affected} from ${g.displayName}.`, r.undoId);
         } else {
           const r = await send({ type: 'ARCHIVE_SENDER', email: g.key, emails: g.emails, alsoMarkRead: !!sel.markRead, allowProtected: true });
-          afterAction(`Override — archived ${r.affected} from ${g.displayName}.`);
+          afterAction(`Override — archived ${r.affected} from ${g.displayName}.`, r.undoId);
         }
       },
     });
@@ -325,6 +331,50 @@ export function App() {
       else setStatus('Could not undo (already undone?).');
     } catch (e: any) {
       setStatus(`Undo failed: ${e.message}`);
+    }
+  };
+
+  // ── Triage (one-sender-at-a-time) ───────────────────
+  // Does NOT rescan after each card — the TriagePage advances its own queue.
+  const triageAct = async (g: SenderGroup, kind: TriageKind, order?: 'unsubFirst' | 'cleanFirst') => {
+    try {
+      if (kind === 'keep') {
+        await onSaveSettings({ keepList: [...settings.keepList, g.key] });
+        setSnackbar({
+          message: `Kept ${g.displayName}`,
+          onUndo: () => void onSaveSettings({ keepList: settings.keepList.filter((k) => k !== g.key) }),
+        });
+        refreshUndo();
+        return;
+      }
+      const ord = order ?? (settings.actionOrder === 'ask' ? 'unsubFirst' : settings.actionOrder);
+      let undoId: string | undefined;
+      let msg: string;
+      if (kind === 'unsub') {
+        const r = await send({ type: 'UNSUBSCRIBE', email: g.key, emails: g.emails });
+        msg = `${g.displayName}: ${r.detail ?? r.method}`;
+      } else if (kind === 'archive') {
+        const r = await send({ type: 'ARCHIVE_SENDER', email: g.key, emails: g.emails, alsoMarkRead: settings.markReadOnArchive });
+        undoId = r.undoId;
+        msg = `Archived ${r.affected} from ${g.displayName}`;
+      } else if (kind === 'trash') {
+        const r = await send({ type: 'TRASH_SENDER', email: g.key, emails: g.emails });
+        undoId = r.undoId;
+        msg = `Trashed ${r.affected} from ${g.displayName}`;
+      } else {
+        const op = kind === 'unsubTrash' ? 'trash' : 'archive';
+        const r = await send({ type: 'COMBO_CLEANUP', email: g.key, emails: g.emails, doUnsub: true, doArchive: true, doFilter: false, alsoMarkRead: settings.markReadOnArchive, op, order: ord });
+        undoId = r.archive?.undoId;
+        const bits: string[] = [];
+        if (r.unsubscribe) bits.push(`unsub ${r.unsubscribe.ok ? 'ok' : 'manual'}`);
+        if (r.archive) bits.push(`${op === 'trash' ? 'trashed' : 'archived'} ${r.archive.affected}`);
+        msg = `${g.displayName}: ${bits.join(' · ') || 'done'}`;
+      }
+      setSnackbar({ message: msg, onUndo: undoId ? () => doUndo(undoId!) : undefined });
+      refreshUndo();
+    } catch (e: any) {
+      setStatus(`Action failed: ${e.message}`);
+      throw e;
     }
   };
 
@@ -414,6 +464,9 @@ export function App() {
   const unsubCount = snapshot
     ? snapshot.senders.filter((g) => g.hasListUnsubscribe && g.tag !== 'protected').length
     : undefined;
+  const triageCount = snapshot
+    ? snapshot.senders.filter((g) => g.tag === 'marketing' || g.tag === 'unknown').length
+    : undefined;
   const noScan = !snapshot && !loading;
   const t = TITLES[view];
 
@@ -437,7 +490,7 @@ export function App() {
         mode={mode}
         setMode={setMode}
         email={auth.email}
-        counts={{ senders: snapshot?.senders.length, unsubscribe: unsubCount, activity: undo.length || undefined }}
+        counts={{ triage: triageCount, senders: snapshot?.senders.length, unsubscribe: unsubCount, activity: undo.length || undefined }}
         onSignOut={signOut}
       />
 
@@ -485,6 +538,19 @@ export function App() {
                       setSendersFilter('marketing');
                       setView('senders');
                     }}
+                  />
+                ),
+              )}
+
+            {view === 'triage' &&
+              needsSnapshot(
+                snapshot && (
+                  <TriagePage
+                    senders={snapshot.senders}
+                    actionOrder={settings.actionOrder}
+                    onAct={triageAct}
+                    onRescan={() => reload(true)}
+                    snapshotKey={snapshot.generatedAt}
                   />
                 ),
               )}
@@ -541,6 +607,7 @@ export function App() {
           }}
         />
       )}
+      <Snackbar data={snackbar} onClose={closeSnackbar} />
     </div>
   );
 }

@@ -42,6 +42,8 @@ export interface BuildOptions {
   sampleSize: number;
   protectedLabelIds: Set<string>;
   extraProtectedDomains?: string[];
+  /** Sender keys the user flagged "keep" — forced to the keep tag (unless protected). */
+  keepKeys?: Set<string>;
   /** Headline facet counts gathered cheaply via estimateCount (categories, read/unread). */
   categoryFacets: FacetCount[];
   readUnreadFacets: FacetCount[];
@@ -82,7 +84,12 @@ export function buildSnapshot(messages: MessageMeta[], opts: BuildOptions): Grou
 
   for (const [key, msgs] of byKey) {
     msgs.sort((a, b) => b.date - a.date);
-    const { tag, reasons } = classifySender(msgs, ctx);
+    let { tag, reasons } = classifySender(msgs, ctx);
+    // A user-marked "keep" overrides everything except protection.
+    if (tag !== 'protected' && opts.keepKeys?.has(key)) {
+      tag = 'keep';
+      reasons = [...reasons, 'you marked this keep'];
+    }
     const rep = msgs.find((m) => m.listUnsubscribe) ?? msgs[0];
     const { method, target } = resolveUnsubMethod(rep.listUnsubscribe, rep.listUnsubscribePost);
     const hasUnsub = !!rep.listUnsubscribe;
@@ -104,6 +111,7 @@ export function buildSnapshot(messages: MessageMeta[], opts: BuildOptions): Grou
       unsubTarget: target,
       hasListUnsubscribe: hasUnsub,
       sampleMessageId: rep.id,
+      recentSubjects: msgs.slice(0, 3).map((m) => m.subject),
       reasons,
     });
   }

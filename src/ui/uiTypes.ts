@@ -1,7 +1,8 @@
 import type { SenderGroup } from '../types';
 
-export type View = 'overview' | 'senders' | 'unsubscribe' | 'activity' | 'settings';
+export type View = 'overview' | 'triage' | 'senders' | 'unsubscribe' | 'activity' | 'settings';
 export type BulkKind = 'unsub' | 'archive' | 'trash';
+export type TriageKind = 'keep' | 'unsubArchive' | 'unsubTrash' | 'archive' | 'trash' | 'unsub';
 
 export interface SenderApi {
   archive: (g: SenderGroup) => void;

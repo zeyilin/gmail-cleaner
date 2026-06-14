@@ -73,7 +73,7 @@ export function Overview({
               </div>
             </div>
             <button className="primary" onClick={onReview}>
-              Review senders <Icon name="arrow" size={15} />
+              Start triage <Icon name="arrow" size={15} />
             </button>
           </div>
         </section>

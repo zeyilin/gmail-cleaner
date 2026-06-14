@@ -44,6 +44,8 @@ export interface SenderGroup {
   hasListUnsubscribe: boolean;
   /** Representative message id (the one carrying unsubscribe headers, if any). */
   sampleMessageId: string;
+  /** Up to 3 most-recent subject lines, for the triage card preview. */
+  recentSubjects: string[];
   /** Why this group was tagged the way it was (for transparency in the UI). */
   reasons: string[];
 }

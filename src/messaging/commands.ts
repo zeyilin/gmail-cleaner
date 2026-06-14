@@ -22,6 +22,8 @@ export type Command =
       doArchive: boolean;
       doFilter: boolean;
       alsoMarkRead?: boolean;
+      op?: 'archive' | 'trash';
+      order?: 'unsubFirst' | 'cleanFirst';
     }
   | { type: 'LIST_UNDO' }
   | { type: 'UNDO'; undoId: string };

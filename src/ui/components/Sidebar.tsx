@@ -3,6 +3,7 @@ import type { View } from '../uiTypes';
 
 const NAV: { id: View; label: string; icon: string }[] = [
   { id: 'overview', label: 'Overview', icon: 'overview' },
+  { id: 'triage', label: 'Triage', icon: 'triage' },
   { id: 'senders', label: 'Senders', icon: 'senders' },
   { id: 'unsubscribe', label: 'Unsubscribe', icon: 'unsubscribe' },
   { id: 'activity', label: 'Activity', icon: 'activity' },

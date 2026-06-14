@@ -34,6 +34,7 @@ async function buildFreshSnapshot(
   force: boolean,
   sampleSize: number,
   extraProtectedDomains: string[],
+  keepKeys: Set<string>,
 ): Promise<GroupSnapshot> {
   emitProgress({ phase: 'scan', label: 'Counting categories…', done: 0, total: 0 });
   const categoryFacets: FacetCount[] = [];
@@ -59,6 +60,7 @@ async function buildFreshSnapshot(
     sampleSize,
     protectedLabelIds,
     extraProtectedDomains,
+    keepKeys,
     categoryFacets,
     readUnreadFacets,
   });
@@ -72,7 +74,12 @@ async function getSnapshot(force?: boolean, sampleSize?: number): Promise<GroupS
     if (cached) return cached;
   }
   const settings = await getSettings();
-  return buildFreshSnapshot(!!force, sampleSize ?? settings.sampleSize, settings.customProtectedDomains);
+  return buildFreshSnapshot(
+    !!force,
+    sampleSize ?? settings.sampleSize,
+    settings.customProtectedDomains,
+    new Set(settings.keepList),
+  );
 }
 
 // Typed dispatch table — each handler's return type is checked against

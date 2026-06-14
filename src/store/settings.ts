@@ -10,6 +10,10 @@ export interface Settings {
   markReadOnArchive: boolean;
   /** Extra sender domains the user wants treated as protected (never bulk-actioned). */
   customProtectedDomains: string[];
+  /** Sender keys the user flagged "OK to keep" during triage (tagged keep, hidden from triage). */
+  keepList: string[];
+  /** Default order for "unsubscribe + clean" combos. */
+  actionOrder: 'unsubFirst' | 'cleanFirst' | 'ask';
 }
 
 const KEY = 'settings';
@@ -19,6 +23,8 @@ export const DEFAULT_SETTINGS: Settings = {
   advancedMode: false,
   markReadOnArchive: true,
   customProtectedDomains: [],
+  keepList: [],
+  actionOrder: 'unsubFirst',
 };
 
 export async function getSettings(): Promise<Settings> {
@@ -46,6 +52,7 @@ export async function saveSettings(patch: Partial<Settings>): Promise<Settings> 
   next.customProtectedDomains = [
     ...new Set(next.customProtectedDomains.map(normalizeDomain).filter((d): d is string => !!d)),
   ].slice(0, 100);
+  next.keepList = [...new Set(next.keepList.map((k) => k.trim().toLowerCase()).filter(Boolean))];
   next.sampleSize = Math.max(100, Math.min(5000, Math.round(next.sampleSize) || DEFAULT_SETTINGS.sampleSize));
   await chrome.storage.local.set({ [KEY]: next });
   return next;
