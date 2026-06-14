@@ -22,6 +22,19 @@ It uses Gmail's *restricted* `gmail.modify` scope, so the Google project stays i
 
 ---
 
+## Quick start (no build needed)
+
+If you've been **added as a tester** (or it's your own machine), you don't need Node:
+
+1. Download the repo (green **Code → Download ZIP**, then unzip) — or `git clone`.
+2. Open `chrome://extensions` → enable **Developer mode** (top-right).
+3. **Load unpacked** → select the **`extension/`** folder (a prebuilt, ready-to-load build).
+4. Click the icon → **Open dashboard → Sign in**.
+
+> The prebuilt `extension/` is wired to the maintainer's Google client, so sign-in works only for **added test users**. Not one yet? [Open an issue](https://github.com/zeyilin/gmail-cleaner/issues/new/choose) with your Gmail to be added — or do the **Setup** below with your own client ID and run `npm run build`.
+
+---
+
 ## Setup — get it running (self-serve, ~5 min)
 
 ### 1. Create a Google Cloud OAuth client
@@ -68,6 +81,7 @@ npm run dev        # WXT dev server + HMR (loads a dev build)
 npm run compile    # tsc --noEmit type check
 npm run test:logic # pure-logic edge-case tests
 npm run build      # production build into dist/chrome-mv3
+npm run pack       # build + copy to the committed extension/ folder (regenerate before committing)
 npm run zip        # package a distributable .zip
 ```
 

@@ -8,6 +8,7 @@
     "dev": "wxt",
     "build": "wxt build",
     "zip": "wxt zip",
+    "pack": "wxt build && node scripts/pack.mjs",
     "compile": "tsc --noEmit",
     "test:logic": "tsx test/logic.test.ts",
     "postinstall": "wxt prepare"
