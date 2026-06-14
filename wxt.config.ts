@@ -17,7 +17,7 @@ try {
 // .env.local (e.g. when you create your own Google OAuth client — see README Setup).
 const OAUTH_CLIENT_ID =
   process.env.WXT_OAUTH_CLIENT_ID ||
-  '963121762754-bp17p5m58f27tab4nbv9pshrmhrck3s8.apps.googleusercontent.com';
+  '963121762754-aqg0ctalj1pil5vae3713k7hrkagu0e0.apps.googleusercontent.com';
 
 // Scopes are intentionally minimal:
 //  - gmail.modify        : list, read metadata, archive (batchModify), trash/untrash, create labels
