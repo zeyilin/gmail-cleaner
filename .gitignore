@@ -1,0 +1,8 @@
+node_modules
+.output
+dist
+.wxt
+*.log
+.env.local
+stats.html
+key.pem
